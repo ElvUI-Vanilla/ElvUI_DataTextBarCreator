@@ -1,15 +1,15 @@
 ﻿local E, L, V, P, G = unpack(ElvUI)
-local AddOnName, Engine = ...
 
 local DT = E:GetModule("DataTexts")
 local DB = E:NewModule("DTBars2", "AceTimer-3.0", "AceHook-3.0", "AceEvent-3.0")
 
---cache
---GLOBALS: CreateFrame, hooksecurefunc, LibStub, ElvDB
+--Cache global variables
+--Lua functions
 local _G = _G
-local ACCEPT, CANCEL = ACCEPT, CANCEL
 local pairs, tinsert, type, error, format, collectgarbage = pairs, tinsert, type, error, format, collectgarbage
-local tcopy = table.copy
+local copy, getn = table.copy, table.getn
+--WoW API / Variables
+local ACCEPT, CANCEL = ACCEPT, CANCEL
 local IsInInstance = IsInInstance
 local ReloadUI = ReloadUI
 
@@ -78,27 +78,27 @@ E.PopupDialogs["DT_Panel_Delete"] = {
 	hideOnEscape = false,
 }
 
-local function Bar_OnEnter(self)
-	if E.db.dtbars[self.Name].mouseover then
-		E:UIFrameFadeIn(self, 0.2, self:GetAlpha(), 1)
+local function Bar_OnEnter()
+	if E.db.dtbars[this.Name].mouseover then
+		E:UIFrameFadeIn(this, 0.2, this:GetAlpha(), 1)
 	end
 end
 
-local function Button_OnEnter(self)
-	local bar = self:GetParent()
+local function Button_OnEnter()
+	local bar = this:GetParent()
 	if E.db.dtbars[bar.Name].mouseover then
 		E:UIFrameFadeIn(bar, 0.2, bar:GetAlpha(), 1)
 	end
 end
 
-local function Bar_OnLeave(self)
-	if E.db.dtbars[self.Name].mouseover then
-		E:UIFrameFadeOut(self, 0.2, self:GetAlpha(), 0)
+local function Bar_OnLeave()
+	if E.db.dtbars[this.Name].mouseover then
+		E:UIFrameFadeOut(this, 0.2, this:GetAlpha(), 0)
 	end
 end
 
-local function Button_OnLeave(self)
-	local bar = self:GetParent()
+local function Button_OnLeave()
+	local bar = this:GetParent()
 	if E.db.dtbars[bar.Name].mouseover then
 		E:UIFrameFadeOut(bar, 0.2, bar:GetAlpha(), 0)
 	end
@@ -113,7 +113,7 @@ function DT:RegisterPanel(panel, numPoints, anchor, xOff, yOff)
 	panel.xOff = xOff
 	panel.yOff = yOff
 	panel.anchor = anchor
-	for i=1, numPoints do
+	for i = 1, numPoints do
 		local newI
 		if numPoints == 4 and i == 3 then newI = 5 end
 		local pointIndex = newI and DT.PointLocation[newI] or DT.PointLocation[i]
@@ -122,12 +122,12 @@ function DT:RegisterPanel(panel, numPoints, anchor, xOff, yOff)
 			panel.dataPanels[pointIndex]:RegisterForClicks("AnyUp")
 			panel.dataPanels[pointIndex].text = panel.dataPanels[pointIndex]:CreateFontString(nil, "OVERLAY")
 			panel.dataPanels[pointIndex].text:SetAllPoints()
-			panel.dataPanels[pointIndex].text:FontTemplate()
+			E:FontTemplate(panel.dataPanels[pointIndex].text)
 			panel.dataPanels[pointIndex].text:SetJustifyH("CENTER")
 			panel.dataPanels[pointIndex].text:SetJustifyV("MIDDLE")
 		end
 
-		panel.dataPanels[pointIndex]:Point(DT:GetDataPanelPoint(panel, newI or i, numPoints))
+		E:Point(panel.dataPanels[pointIndex], DT:GetDataPanelPoint(panel, newI or i, numPoints))
 	end
 
 	panel:SetScript("OnSizeChanged", DT.UpdateAllDimensions)
@@ -141,16 +141,16 @@ function DT:UpdateAllDimensions()
 			if not E.db.dtbars[panelName] then DB:ProfileHandle(panelName, E.global.dtbars[panelName]) end --In case someone will run installs and stuff
 			vert = E.db.dtbars[panelName].growth == "VERTICAL" and true or false
 		end
-		local width = (vert and panel:GetWidth() or ( panel:GetWidth()/ panel.numPoints)) - 4
-		local height = (vert and (panel:GetHeight()/panel.numPoints) or panel:GetHeight()) - 4
-		for i=1, panel.numPoints do
+		local width = (vert and panel:GetWidth() or ( panel:GetWidth() / panel.numPoints)) - 4
+		local height = (vert and (panel:GetHeight() / panel.numPoints) or panel:GetHeight()) - 4
+		for i = 1, panel.numPoints do
 			local newI
 			if panel.numPoints == 4 and i == 3 then newI = 5 end
 			local pointIndex = newI and DT.PointLocation[newI] or DT.PointLocation[i]
-			panel.dataPanels[pointIndex]:Width(width)
-			panel.dataPanels[pointIndex]:Height(height)
+			E:Width(panel.dataPanels[pointIndex], width)
+			E:Height(panel.dataPanels[pointIndex], height)
 			panel.dataPanels[pointIndex]:ClearAllPoints()
-			panel.dataPanels[pointIndex]:Point(DT:GetDataPanelPoint(panel, newI or i, panel.numPoints))
+			E:Point(panel.dataPanels[pointIndex], DT:GetDataPanelPoint(panel, newI or i, panel.numPoints))
 		end
 	end
 end
@@ -222,7 +222,7 @@ function DT:LoadDataTexts()
 	local fontTemplate = LSM:Fetch("font", self.db.font)
 	for panelName, panel in pairs(DT.RegisteredPanels) do
 		--Restore Panels
-		for i=1, panel.numPoints do
+		for i = 1, panel.numPoints do
 			local newI
 			if panel.numPoints == 4 and i == 3 then newI = 5 end
 			local pointIndex = newI and DT.PointLocation[newI] or DT.PointLocation[i]
@@ -231,7 +231,7 @@ function DT:LoadDataTexts()
 			panel.dataPanels[pointIndex]:SetScript("OnEnter", nil)
 			panel.dataPanels[pointIndex]:SetScript("OnLeave", nil)
 			panel.dataPanels[pointIndex]:SetScript("OnClick", nil)
-			panel.dataPanels[pointIndex].text:FontTemplate(fontTemplate, self.db.fontSize, self.db.fontOutline)
+			E:FontTemplate(panel.dataPanels[pointIndex].text, fontTemplate, self.db.fontSize, self.db.fontOutline)
 			panel.dataPanels[pointIndex].text:SetText(nil)
 			panel.dataPanels[pointIndex].pointIndex = pointIndex
 
@@ -259,8 +259,8 @@ function DT:LoadDataTexts()
 				end
 			end
 			if E.global.dtbars and E.global.dtbars[panelName] then
-				panel.dataPanels[pointIndex]:HookScript("OnEnter", Button_OnEnter)
-				panel.dataPanels[pointIndex]:HookScript("OnLeave", Button_OnLeave)
+				HookScript(panel.dataPanels[pointIndex], "OnEnter", Button_OnEnter)
+				HookScript(panel.dataPanels[pointIndex], "OnLeave", Button_OnLeave)
 			end
 		end
 	end
@@ -272,7 +272,7 @@ end
 
 --function for dealing with settings in case the table for the panel doesn"t exist in current profile
 function DB:ProfileHandle(name, data)
-	if E.db.dtbars and not E.db.dtbars[name] then E.db.dtbars[name] = tcopy(DB.DefaultPanel) end
+	if E.db.dtbars and not E.db.dtbars[name] then E.db.dtbars[name] = copy(DB.DefaultPanel) end
 	if E.db.dtbars[name] and not E.db.dtbars[name].height then E.db.dtbars[name].height = 22 end
 	if data.slots == 1 then
 		if not P.datatexts.panels[name] then
@@ -354,7 +354,7 @@ function DB:InsertPanel(name, slots, growth, width, transparent, anchor, point, 
 					["enable"] = true,
 					["growth"] = growth,
 					["width"] = width,
-					["transparent"] = transparent
+					["transparent"] = transparent,
 				}
 			end
 		end
@@ -390,7 +390,7 @@ function DB:Resize()
 			local db = E.db.dtbars[name]
 			if not db.width and not db.height then return end
 			local height = db.height * (db.growth == "VERTICAL" and data.slots or 1)
-			_G[name]:SetSize(db.width, height)
+			E:Size(_G[name], db.width, height)
 		end
 	end
 	DT:UpdateAllDimensions()
@@ -402,20 +402,25 @@ function DB:ExtraDataBarSetup()
 			local db = E.db.dtbars[name]
 			if db.enable then
 				_G[name]:Show()
-				if E.db.dtbars[name].mouseover then Bar_OnLeave(_G[name]) end
-				E:EnableMover(_G[name].mover:GetName())
 			else
 				_G[name]:Hide()
-				E:DisableMover(_G[name].mover:GetName())
 			end
 			if not E.global.dtbars[name].hide then
 				if db.transparent then
-					_G[name]:SetTemplate("Transparent")
+					E:SetTemplate(_G[name], "Transparent")
 				else
-					_G[name]:SetTemplate("Default", true)
+					E:SetTemplate(_G[name], "Default", true)
 				end
 			end
 
+		end
+	end
+end
+
+function DB:RegisterHide()
+	for name, data in pairs(E.global.dtbars) do
+		if name then
+			local db = E.db.dtbars[name]
 		end
 	end
 end
@@ -424,7 +429,7 @@ function DB:MoverCreation()
 	if not E.db.dtbars then E.db.dtbars = {} end
 	for name, data in pairs(E.global.dtbars) do
 		if name and not _G[name.."_Mover"] then
-			E:CreateMover(_G[name], name.."_Mover", name, nil, nil, nil, "ALL,MISC,DTBars")
+			E:CreateMover(_G[name], name.."_Mover", name, nil, nil, nil, "ALL, MISC, DTBars")
 		end
 	end
 end
@@ -450,7 +455,7 @@ function DB:CreateFrames()
 			local db = E.db.dtbars[name]
 			local bar = CreateFrame("Frame", name, E.UIParent)
 			bar:SetFrameStrata(data.strata)
-			bar:Point(data.anchor, E.UIParent, data.point, data.x, data.y)
+			E:Point(bar, data.anchor, E.UIParent, data.point, data.x, data.y)
 			DT:RegisterPanel(bar, data.slots, "ANCHOR_BOTTOM", 0, -4)
 			bar.Name = name
 			bar:Hide()
@@ -463,26 +468,24 @@ function DB:Update()
 		DB:ProfileHandle(name, data)
 	end
 	DB:ExtraDataBarSetup()
+	DB:RegisterHide()
 	DB:Resize()
 	DB:MouseOver()
 
-	collectgarbage("collect")
+	collectgarbage()
 end
 
 function DB:Initialize()
-	tinsert(E.ConfigModeLayouts, #(E.ConfigModeLayouts)+1, "DTBars")
+	tinsert(E.ConfigModeLayouts, getn(E.ConfigModeLayouts) + 1, "DTBars")
 	E.ConfigModeLocalizedStrings["DTBars"] = "DTBars"
 	DB:CreateFrames()
 	DB:Resize()
 	DB:MoverCreation()
 	DB:ExtraDataBarSetup()
+	DB:RegisterHide()
 	DB:MouseOver()
 	hooksecurefunc(E, "UpdateAll", DB.Update)
-	LibStub("LibElvUIPlugin-1.0"):RegisterPlugin(AddOnName, DB.GetOptions)
+	LibStub("LibElvUIPlugin-1.0"):RegisterPlugin("ElvUI_DataTextBarCreator", DB.GetOptions)
 end
 
-local function InitializeCallback()
-	DB:Initialize()
-end
-
-E:RegisterModule(DB:GetName(), InitializeCallback)
+E:RegisterModule(DB:GetName())
