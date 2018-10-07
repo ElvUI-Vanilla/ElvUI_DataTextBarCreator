@@ -1,5 +1,5 @@
 ﻿## Interface: 11200
-## Title: |cffA11313E|r|cffC4C4C4lvUI|r |cffA11313D|r|cffC4C4C4ata|r|cffA11313T|r|cffC4C4C4ext|r |cffA11313B|r|cffC4C4C4ar|r |cffA11313C|r|cffC4C4C4reator|r
+## Title: |cff175581E|r|cffC4C4C4lvUI|r |cff175581D|r|cffC4C4C4ata|r|cff175581T|r|cffC4C4C4ext|r |cff175581B|r|cffC4C4C4ar|r |cff175581C|r|cffC4C4C4reator|r
 ## Author: |cff9482c9Darth Predator|r
 ## Version: 7.0.3.0010
 ## Notes: The plugin to create and manage additional datatext panels.
