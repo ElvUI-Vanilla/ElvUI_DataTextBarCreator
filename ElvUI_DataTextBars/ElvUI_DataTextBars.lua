@@ -1,17 +1,18 @@
-﻿local E, L, V, P, G = unpack(ElvUI)
-
-local DT = E:GetModule("DataTexts")
-local DB = E:NewModule("DTBars2", "AceTimer-3.0", "AceHook-3.0", "AceEvent-3.0")
+﻿local E, L, V, P, G = unpack(ElvUI); --Import: Engine, Locales, PrivateDB, ProfileDB, GlobalDB
+local DT = E:GetModule("DataTexts");
+local DB = E:NewModule("DTBars2", "AceTimer-3.0", "AceHook-3.0", "AceEvent-3.0");
 
 --Cache global variables
 --Lua functions
 local _G = _G
-local pairs, tinsert, type, error, format, collectgarbage = pairs, tinsert, type, error, format, collectgarbage
-local copy, getn = table.copy, table.getn
+local pairs, type, error, collectgarbage = pairs, type, error, collectgarbage
+local getn, tinsert, tcopy = table.getn, tinsert, table.copy
+local format = string.format
 --WoW API / Variables
-local ACCEPT, CANCEL = ACCEPT, CANCEL
 local IsInInstance = IsInInstance
 local ReloadUI = ReloadUI
+local UnitAffectingCombat = UnitAffectingCombat
+local ACCEPT, CANCEL = ACCEPT, CANCEL
 
 P["dtbars"] = {}
 G["dtbars"] = {}
@@ -30,6 +31,7 @@ G["dtbarsSetup"] = {
 	["transparent"] = false,
 	["hide"] = false,
 	["mouseover"] = false,
+	["combatHide"] = false,
 }
 
 --Rearranging pointLoc indexes cause 2 point DT panel looks weird with point being called "middle"
@@ -48,6 +50,7 @@ DB.DefaultPanel = {
 	["height"] = 22,
 	["transparent"] = false,
 	["mouseover"] = false,
+	["combatHide"] = false,
 }
 
 
@@ -272,7 +275,7 @@ end
 
 --function for dealing with settings in case the table for the panel doesn"t exist in current profile
 function DB:ProfileHandle(name, data)
-	if E.db.dtbars and not E.db.dtbars[name] then E.db.dtbars[name] = copy(DB.DefaultPanel) end
+	if E.db.dtbars and not E.db.dtbars[name] then E.db.dtbars[name] = tcopy(DB.DefaultPanel) end
 	if E.db.dtbars[name] and not E.db.dtbars[name].height then E.db.dtbars[name].height = 22 end
 	if data.slots == 1 then
 		if not P.datatexts.panels[name] then
@@ -337,7 +340,7 @@ end
 --Creating new panel
 function DB:InsertPanel(name, slots, growth, width, transparent, anchor, point, x, y, strata, hide)
 	if name == "" then return end
-	name = "DTB2_"..name
+	name = "DTB_"..name
 	if not E.global.dtbars[name] then
 		E.global.dtbars[name] = {
 			["anchor"] = anchor,
@@ -402,8 +405,11 @@ function DB:ExtraDataBarSetup()
 			local db = E.db.dtbars[name]
 			if db.enable then
 				_G[name]:Show()
+				if E.db.dtbars[name].mouseover then Bar_OnLeave(_G[name]) end
+				E:EnableMover(_G[name].mover:GetName())
 			else
 				_G[name]:Hide()
+				E:DisableMover(_G[name].mover:GetName())
 			end
 			if not E.global.dtbars[name].hide then
 				if db.transparent then
@@ -417,10 +423,17 @@ function DB:ExtraDataBarSetup()
 	end
 end
 
-function DB:RegisterHide()
-	for name, data in pairs(E.global.dtbars) do
+function DB:OnEvent(event, unit)
+	if unit and unit ~= "player" then return end
+	local inCombat = (event == "PLAYER_REGEN_DISABLED" and true) or (event == "PLAYER_REGEN_ENABLED" and false) or UnitAffectingCombat("player")
+	for name, _ in pairs(E.global.dtbars) do
 		if name then
 			local db = E.db.dtbars[name]
+			if inCombat and db.combatHide then
+				_G[name]:Hide()
+			else
+				_G[name]:Show()
+			end
 		end
 	end
 end
@@ -468,7 +481,6 @@ function DB:Update()
 		DB:ProfileHandle(name, data)
 	end
 	DB:ExtraDataBarSetup()
-	DB:RegisterHide()
 	DB:Resize()
 	DB:MouseOver()
 
@@ -482,10 +494,15 @@ function DB:Initialize()
 	DB:Resize()
 	DB:MoverCreation()
 	DB:ExtraDataBarSetup()
-	DB:RegisterHide()
 	DB:MouseOver()
 	hooksecurefunc(E, "UpdateAll", DB.Update)
-	LibStub("LibElvUIPlugin-1.0"):RegisterPlugin("ElvUI_DataTextBarCreator", DB.GetOptions)
+	DB:RegisterEvent("PLAYER_REGEN_DISABLED", "OnEvent")
+	DB:RegisterEvent("PLAYER_REGEN_ENABLED", "OnEvent")
+	LibStub("LibElvUIPlugin-1.0"):RegisterPlugin("ElvUI_DataTextBars", DB.GetOptions)
 end
 
-E:RegisterModule(DB:GetName())
+local function InitializeCallback()
+	DB:Initialize()
+end
+
+E:RegisterModule(DB:GetName(), InitializeCallback)
